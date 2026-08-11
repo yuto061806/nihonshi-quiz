@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>日本史トレーナー</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--text:#172033;--muted:#667085;--line:#e5e7eb;--accent:#172033;--ok:#16803c;--bad:#c62828}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif}
+body{padding-bottom:env(safe-area-inset-bottom)}
+.app{max-width:720px;margin:auto;min-height:100vh}
+header{padding:calc(18px + env(safe-area-inset-top)) 18px 18px;background:var(--accent);color:#fff}
+h1{font-size:23px;margin:0 0 5px}.subtitle{font-size:13px;opacity:.8}
+main{padding:16px}
+.card{background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 3px 16px rgba(0,0,0,.06)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center;background:#f5f7fb;border-radius:14px;padding:12px 5px}.num{font-size:23px;font-weight:800}.lab{font-size:11px;color:var(--muted)}
+button{appearance:none;border:0;width:100%;min-height:50px;border-radius:14px;margin:6px 0;padding:12px 14px;font-size:16px;font-weight:750;background:var(--accent);color:#fff;touch-action:manipulation}
+button.secondary{background:#e9edf3;color:var(--text)}
+.choice{text-align:left;background:#f0f3f8;color:var(--text);border:2px solid transparent}
+.choice:active{transform:scale(.99)}
+.choice.correct{background:#e2f6e9;border-color:#51a66d;color:#155d31}.choice.wrong{background:#fde7e7;border-color:#d66;color:#8b1e1e}
+.badge{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:800}.S{background:#ffe1e1;color:#a01919}.A{background:#fff0c4;color:#795800}
+.progress{height:8px;background:#e7eaf0;border-radius:99px;overflow:hidden;margin:10px 0 15px}.bar{height:100%;background:var(--accent);transition:width .2s}
+.q{font-size:19px;line-height:1.65;font-weight:800;margin:12px 0}.feedback{margin:12px 0;padding:14px;border-radius:14px;background:#f6f8fb;line-height:1.65}
+.hidden{display:none!important}.small{font-size:12px;color:var(--muted);line-height:1.6}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:9px 4px;border-bottom:1px solid var(--line);text-align:left}
+#installTip{background:#fff8dc;border:1px solid #ead48a;border-radius:12px;padding:12px;font-size:13px;line-height:1.55;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>福大・九産大 日本史トレーナー</h1><div class="subtitle">S・Aランク｜正答率｜弱点分析</div></header>
+<main>
+<div id="installTip">📱 iPhoneでは「ファイル」アプリのプレビューではJavaScriptが動かないことがあります。<b>SafariなどのブラウザでWebページとして開く</b>と使いやすいです。</div>
+
+<section id="home">
+<div class="card">
+<h2>成績</h2>
+<div class="stats">
+<div class="stat"><div class="num" id="homeTotal">0</div><div class="lab">回答数</div></div>
+<div class="stat"><div class="num" id="homeAcc">—</div><div class="lab">正答率</div></div>
+<div class="stat"><div class="num" id="homeTests">0</div><div class="lab">テスト回数</div></div>
+</div>
+</div>
+<div class="card">
+<h2>テスト</h2>
+<button onclick="start(10,'S')">🔥 Sランク 10問</button>
+<button onclick="start(20,'MIX')">🎯 S＋A 20問</button>
+<button class="secondary" onclick="stats()">📊 成績・弱点を見る</button>
+<button class="secondary" onclick="clearAll()">記録をリセット</button>
+</div>
+</section>
+
+<section id="quiz" class="hidden">
+<div class="card">
+<div><span id="rank" class="badge S">S</span> <span id="cat"></span></div>
+<div class="progress"><div id="bar" class="bar"></div></div>
+<div id="counter" class="small"></div>
+<div id="question" class="q"></div>
+<div id="choices"></div>
+<div id="feedback" class="feedback hidden"></div>
+<button id="next" class="hidden" onclick="next()">次の問題 →</button>
+<button class="secondary" onclick="home()">ホーム</button>
+</div>
+</section>
+
+<section id="result" class="hidden">
+<div class="card">
+<h2>結果</h2>
+<div class="stats">
+<div class="stat"><div class="num" id="rScore">0/0</div><div class="lab">正解</div></div>
+<div class="stat"><div class="num" id="rAcc">0%</div><div class="lab">正答率</div></div>
+<div class="stat"><div class="num" id="rGrade">—</div><div class="lab">評価</div></div>
+</div>
+<div id="rMsg" class="feedback"></div>
+<button onclick="home()">ホームへ</button>
+<button class="secondary" onclick="stats()">弱点を見る</button>
+</div>
+</section>
+
+<section id="stats" class="hidden">
+<div class="card">
+<h2>成績・弱点分析</h2>
+<div class="stats">
+<div class="stat"><div class="num" id="sTotal">0</div><div class="lab">回答数</div></div>
+<div class="stat"><div class="num" id="sAcc">—</div><div class="lab">総合正答率</div></div>
+<div class="stat"><div class="num" id="sTests">0</div><div class="lab">テスト回数</div></div>
+</div>
+<h3>分野別</h3><table><thead><tr><th>分野</th><th>正答率</th><th>判定</th></tr></thead><tbody id="table"></tbody></table>
+<h3>最近のテスト</h3><div id="history" class="small"></div>
+<button onclick="home()">ホームへ</button>
+</div>
+</section>
+</main>
+</div>
+
+<script>
+"use strict";
+const Q=[
+["S","古代・天皇","推古天皇の時代、政治を補佐した人物は？",["聖徳太子（厩戸王）","藤原道長","源頼朝","北条泰時"],0,"推古天皇の時代には聖徳太子（厩戸王）が政治を補佐。冠位十二階・十七条憲法・遣隋使とセット。"],
+["S","古代・律令","壬申の乱の後に即位した天皇は？",["天武天皇","天智天皇","聖武天皇","桓武天皇"],0,"672年の壬申の乱で勝利した大海人皇子が天武天皇として即位。"],
+["S","古代・奈良","墾田永年私財法が出されたのは誰の時代？",["聖武天皇","推古天皇","桓武天皇","後醍醐天皇"],0,"743年、聖武天皇の時代。開墾した土地の永久私有を認めた。"],
+["S","古代・平安","平安京へ遷都した天皇は？",["桓武天皇","嵯峨天皇","天智天皇","醍醐天皇"],0,"794年、桓武天皇が平安京へ遷都。"],
+["S","中世・鎌倉","承久の乱で鎌倉幕府に敗れた上皇は？",["後鳥羽上皇","白河上皇","鳥羽上皇","後白河上皇"],0,"後鳥羽上皇が幕府打倒を目指して挙兵したが敗北。"],
+["S","中世・鎌倉","御成敗式目を制定した人物は？",["北条泰時","北条時宗","源頼朝","足利尊氏"],0,"1232年、執権北条泰時が御成敗式目を制定。"],
+["S","中世・室町","日明貿易を始めた室町幕府の将軍は？",["足利義満","足利尊氏","足利義政","足利義昭"],0,"足利義満が明との勘合貿易を開始。"],
+["S","近世・幕府","江戸幕府を開いた人物は？",["徳川家康","徳川家光","徳川吉宗","豊臣秀吉"],0,"1603年、徳川家康が征夷大将軍となり江戸幕府を開いた。"],
+["S","近世・改革","享保の改革を行った将軍は？",["徳川吉宗","徳川綱吉","松平定信","水野忠邦"],0,"徳川吉宗＝享保、松平定信＝寛政、水野忠邦＝天保。"],
+["S","近世・外交","日米和親条約のきっかけとなった人物は？",["ペリー","ハリス","シーボルト","マッカーサー"],0,"1853年ペリー来航、1854年日米和親条約。"],
+["A","近代・明治","廃藩置県が行われた年は？",["1871年","1868年","1877年","1889年"],0,"1871年。藩を廃止し府県を置いた。"],
+["A","近代・憲法","大日本帝国憲法が発布された年は？",["1889年","1881年","1890年","1900年"],0,"1889年に発布、1890年に施行。"],
+["A","近代・外交","日清戦争の講和条約は？",["下関条約","ポーツマス条約","日米和親条約","サンフランシスコ平和条約"],0,"1895年、下関条約。"],
+["A","近代・外交","日露戦争の講和条約は？",["ポーツマス条約","下関条約","日米修好通商条約","日ソ共同宣言"],0,"1905年、ポーツマス条約。"],
+["A","戦後","日本国憲法が施行された年は？",["1947年","1945年","1946年","1951年"],0,"1946年公布、1947年施行。"],
+["A","戦後・外交","サンフランシスコ平和条約が発効した年は？",["1952年","1951年","1955年","1960年"],0,"1951年調印、1952年発効。"],
+["A","戦後・政治","55年体制が成立した年は？",["1955年","1947年","1960年","1972年"],0,"1955年、自民党結成と社会党再統一により成立。"],
+["A","戦後・経済","1973年に起きた石油危機は？",["第一次石油危機","世界恐慌","昭和恐慌","ブラックマンデー"],0,"1973年の第一次石油危機（オイルショック）。"],
+["A","中世・室町","応仁の乱が始まった年は？",["1467年","1392年","1428年","1485年"],0,"1467年に始まり、1477年まで続いた。"],
+["A","近世・文化","元禄文化の代表的人物は？",["井原西鶴","松尾芭蕉","葛飾北斎","福沢諭吉"],0,"井原西鶴は元禄文化。葛飾北斎は化政文化。"]
+].map(x=>({r:x[0],c:x[1],q:x[2],a:x[3],ok:x[4],e:x[5]}));
+
+const KEY="jp_quiz_iphone_v2";
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{ans:[],tests:0,hist:[]}}catch(e){return{ans:[],tests:0,hist:[]}}}
+function save(d){localStorage.setItem(KEY,JSON.stringify(d))}
+let quiz=[],i=0,score=0,locked=false;
+
+function show(id){["home","quiz","result","stats"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id))}
+function home(){show("home");updateHome()}
+function updateHome(){let d=load(),n=d.ans.length,ok=d.ans.filter(x=>x).length;document.getElementById("homeTotal").textContent=n;document.getElementById("homeAcc").textContent=n?Math.round(ok/n*100)+"%":"—";document.getElementById("homeTests").textContent=d.tests}
+function start(n,mode){
+ let pool=mode==="S"?Q.filter(x=>x.r==="S"):[...Q];
+ pool=pool.sort(()=>Math.random()-.5).slice(0,n);
+ quiz=pool;i=0;score=0;show("quiz");render();
+}
+function render(){
+ locked=false;let q=quiz[i],pct=i/quiz.length*100;
+ document.getElementById("rank").textContent=q.r;document.getElementById("rank").className="badge "+q.r;
+ document.getElementById("cat").textContent=q.c;document.getElementById("counter").textContent=`第 ${i+1} / ${quiz.length} 問`;
+ document.getElementById("bar").style.width=pct+"%";document.getElementById("question").textContent=q.q;
+ document.getElementById("feedback").classList.add("hidden");document.getElementById("next").classList.add("hidden");
+ let box=document.getElementById("choices");box.innerHTML="";
+ q.a.forEach((a,j)=>{let b=document.createElement("button");b.className="choice";b.textContent="ABCD"[j]+"　"+a;b.addEventListener("click",()=>answer(j,b),{once:true});box.appendChild(b)})
+}
+function answer(j,btn){
+ if(locked)return;locked=true;let q=quiz[i],correct=j===q.ok;if(correct)score++;
+ btn.classList.add(correct?"correct":"wrong");
+ document.querySelectorAll(".choice")[q.ok].classList.add("correct");
+ let f=document.getElementById("feedback");f.classList.remove("hidden");f.innerHTML=(correct?"⭕ <b>正解！</b>":"❌ <b>不正解</b>")+"<br>"+q.e;
+ let d=load();d.ans.push(correct);save(d);
+ document.getElementById("next").classList.remove("hidden");
+}
+function next(){if(!locked)return;if(i+1<quiz.length){i++;render()}else finish()}
+function finish(){
+ let total=quiz.length,acc=Math.round(score/total*100),d=load();d.tests++;d.hist.unshift({date:new Date().toLocaleString("ja-JP"),score,total,acc});d.hist=d.hist.slice(0,10);save(d);
+ document.getElementById("rScore").textContent=`${score}/${total}`;document.getElementById("rAcc").textContent=acc+"%";document.getElementById("rGrade").textContent=acc>=90?"S":acc>=75?"A":acc>=60?"B":"C";
+ document.getElementById("rMsg").textContent=acc>=90?"かなり仕上がってる！次は弱点分野を潰そう。":acc>=75?"良いペース。間違えた分野を復習して再挑戦。":acc>=60?"基礎はできてきている。Sランクをもう一周。":"まずSランクの基本事項を固めよう。";
+ show("result");
+}
+function stats(){
+ let d=load(),n=d.ans.length,ok=d.ans.filter(x=>x).length;document.getElementById("sTotal").textContent=n;document.getElementById("sAcc").textContent=n?Math.round(ok/n*100)+"%":"—";document.getElementById("sTests").textContent=d.tests;
+ document.getElementById("table").innerHTML="<tr><td>全問題</td><td>"+(n?Math.round(ok/n*100)+"%":"—")+"</td><td>"+(n?(ok/n>=.8?"◎":"要復習"):"未受験")+"</td></tr>";
+ document.getElementById("history").innerHTML=d.hist.length?d.hist.map(x=>`${x.date}　<b>${x.score}/${x.total}</b>（${x.acc}%）`).join("<br>"):"まだ記録なし";
+ show("stats");
+}
+function clearAll(){if(confirm("成績を全部消しますか？")){localStorage.removeItem(KEY);home()}}
+updateHome();
+</script>
+</body></html>
